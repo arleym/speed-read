@@ -2,38 +2,177 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Reed</title>
+  <title>Reed - Text to Speech Robot</title>
 </head>
+<style>
+  html { box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: monospace;
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    background-color: #ddd;
+  }
+  .voiceinator {
+    padding: 0 1rem 1rem;
+    width: 50rem;
+    margin: auto;
+    border-radius: 4px;
+    background: white;
+    overflow: hidden;
+    z-index: 1;
+  }
+  h1 {
+    width: 100%;
+    padding: 0.5rem;
+    background: LightSlateGrey;
+    color: white;
+    text-align: center;
+  }
+  .voiceinator input,
+  .voiceinator button,
+  .voiceinator select,
+  .voiceinator textarea {
+    width: 100%;
+    display: block;
+    margin: 10px 0;
+    padding: 10px;
+    border: 0;
+    font-size: 1rem;
+    background: #eee;
+    outline: 0;
+  }
+  textarea {
+    height: 20rem;
+    min-height: 50vh;
+  }
+  .voiceinator button {
+    background: LightSlateGrey;
+    color: white;
+    width: 49%;
+    float: right; /* it seems out of place now, but it is already in place, so */
+    margin-bottom: 0;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  .voiceinator button:active { top: 2px; }
+  .voiceinator button:nth-of-type(1) { margin-left: 2%; }
+  .hidden { display: none !important; }
+</style>
 <body>
-  <h1>Reed</h1>
+  <div class="voiceinator">
+    <h1>Reed - Text to Speech Robot</h1>
+    <select name="voice" id="voices">
+      <option value="">Select A Voice</option>
+    </select>
+
+    <label for="rate">Rate:</label>
+    <input name="rate" id="rate" type="range" min="0" max="16" value="2.7" step="0.1" list="tickmarks">
+    <datalist id="tickmarks">
+      <option value="0">
+      <option value="1">
+      <option value="2">
+      <option value="3">
+      <option value="4">
+      <option value="5">
+      <option value="6">
+      <option value="7">
+      <option value="8">
+      <option value="9">
+      <option value="10">
+      <option value="11">
+      <option value="12">
+      <option value="13">
+      <option value="14">
+      <option value="15">
+      <option value="16">
+    </datalist>
+
+    <label for="pitch">Pitch:</label>
+    <input name="pitch" type="range" min="0" max="2" step="0.1">
+
+    <textarea name="text">Allow me to read your burdensome web articles to you.</textarea>
+
+    <button id="stop">Stop</button>
+    <button id="speak" class="">Speak</button>
+    <button id="pause" class="hidden">Pause</button>
+    <button id="resume" class="hidden">Resume</button>
+  </div>
+
   <script>
-    // https://developers.google.com/web/updates/2014/01/Web-apps-that-talk-Introduction-to-the-Speech-Synthesis-API
-    // https://www.audero.it/demo/speech-synthesis-api-demo.html
-    if ('speechSynthesis' in window) {
-      // Synthesis support. Make your web apps talk!
-      var msg = new SpeechSynthesisUtterance();
-      var voices = window.speechSynthesis.getVoices();
-      msg.voice = voices[10]; // Note: some voices don't support altering params
-      msg.voiceURI = 'native';
-      msg.volume = 1; // 0 to 1
-      msg.rate = 1; // 0.1 to 10
-      msg.pitch = 2; //0 to 2
-      msg.text = 'Hello World';
-      msg.lang = 'en-US';
+    const msg = new SpeechSynthesisUtterance();
+    let voices = []; //empty array for voices
+    const voicesDropdown = document.querySelector('[name="voice"]');
+    const options = document.querySelectorAll('[type="range"], [name="text"]');
+    const rate = document.querySelector('#rate');
+    const speakButton = document.querySelector('#speak'); //start to speak
+    const stopButton = document.querySelector('#stop'); //stop
+    const pauseButton = document.querySelector('#pause'); //pause
+    const resumeButton = document.querySelector('#resume'); //resume
+    msg.text = document.querySelector('[name="text"]').value;
 
-      msg.onend = function(e) {
-        console.log('Finished in ' + event.elapsedTime + ' seconds.');
-      };
-
-      speechSynthesis.speak(msg);
+    function populateVoices() {
+      voices = this.getVoices();
+      voicesDropdown.innerHTML = voices
+      .filter(voice => voice.lang.includes('en')) // showing only english voices
+      .map(voice => `<option value="${voice.name}">${voice.name} (${voice.lang})</option>`) //all of the voices
+      .join('');
     }
 
+    function setVoice() {
+      msg.voice = voices.find(voice => voice.name === this.value); //loop over every single voices in the array and find the one where it's name attribute is the same as the option that was currently selected
+      toggle();
+    }
+
+    function toggle(startOver = true) {
+      speechSynthesis.cancel();
+      speakButton.classList.remove('hidden');
+      pauseButton.classList.add('hidden');
+      resumeButton.classList.add('hidden')
+      //restart speaking
+      if (startOver) {
+        speechSynthesis.speak(msg);
+        speakButton.classList.add('hidden');
+        pauseButton.classList.remove('hidden');
+      }
+    }
+
+    function pause() {
+      speechSynthesis.pause();
+      pauseButton.classList.add('hidden');
+      resumeButton.classList.remove('hidden');
+    }
+
+    function resume() {
+      speechSynthesis.resume();
+      pauseButton.classList.remove('hidden');
+      resumeButton.classList.add('hidden');
+    }
+
+    function setOption() {
+      console.log(this.name, this.value);
+      msg[this.name] = this.value;
+      toggle();
+    }
+
+    msg.onend = function(event) {
+      console.log('Utterance has finished ' + event.elapsedTime + ' milliseconds.');
+      speakButton.classList.remove('hidden');
+      pauseButton.classList.add('hidden');
+      resumeButton.classList.add('hidden');
+    }
+
+    msg.rate = 2.7; // default rate on load
+    speechSynthesis.addEventListener('voiceschanged', populateVoices);
+    voicesDropdown.addEventListener('change', setVoice);
+    options.forEach(option => option.addEventListener('change', setOption));
+    speakButton.addEventListener('click', toggle);
+    pauseButton.addEventListener('click', pause);
+    resumeButton.addEventListener('click', resume);
+    stopButton.addEventListener('click', () => toggle(false));
   </script>
-  <!--
-    # TO DO
-    - enter text into a text area, sanitize killer chars?
-    - pause / resume
-    - Speed controls on the fly
-   -->
 </body>
 </html>

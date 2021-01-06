@@ -124,7 +124,8 @@
     }
 
     function setVoice() {
-      msg.voice = voices.find(voice => voice.name === this.value); //loop over every single voices in the array and find the one where it's name attribute is the same as the option that was currently selected
+      //loop over every single voices in the array and find the one where it's name attribute is the same as the option that was currently selected
+      msg.voice = voices.find(voice => voice.name === this.value);
       toggle();
     }
 
